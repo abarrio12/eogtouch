@@ -56,6 +56,8 @@ class StimuliColor(Enum):
 class GameState:
     """
     Clase que representa el estado del juego
+
+    TODO: No me gusta como quedó esto
     """
 
     def __init__(self, screen_size: tuple[int, int], iterations_count: int = 10):
@@ -209,4 +211,3 @@ class GameState:
             time_elapsed = current_time - self._last_keypress_ts
             if time_elapsed > KEYPRESS_TIMEOUT:
                 self.next_iteration()
-
