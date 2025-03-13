@@ -58,6 +58,7 @@ class GameState:
     Clase que representa el estado del juego
 
     Otra cosa
+    ya pinto de rojo la bola
     """
 
     def __init__(self, screen_size: tuple[int, int], iterations_count: int = 10):
