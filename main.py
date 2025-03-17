@@ -1,12 +1,13 @@
-from pygame.time import Clock
-from pygame import display, event, init, quit
-from pygame.font import Font
 from datetime import datetime
+from time import time_ns
+
 import pandas as pd
 import pygame
-from time import time_ns
+from pygame import display, event, init, quit
+from pygame.font import Font
+from pygame.time import Clock
+
 from game import GameState, MainStatus
-import os
 
 # Definimos algunos colores
 WHITE = (255, 255, 255)
@@ -15,6 +16,7 @@ RED = (255, 0, 0)
 
 ESTIMULO_RADIO = 30
 EYES_RADIO = 10
+
 
 class App:
     def __init__(self, width=800, height=600, max_iterations=15):
@@ -29,12 +31,14 @@ class App:
     def log_event(self, e, value: int | float | str):
         key_name = pygame.key.name(e.key)
         ts = time_ns()
-        event_type = 'press' if e.type == pygame.KEYDOWN else 'release'
-        self.events.append({"timestamp": ts, "event": event_type, "key": key_name, "value": value})
+        event_type = "press" if e.type == pygame.KEYDOWN else "release"
+        self.events.append(
+            {"timestamp": ts, "event": event_type, "key": key_name, "value": value}
+        )
 
     def save_events(self):
         df = pd.DataFrame(self.events)
-        df.to_parquet(f".\Documents\Ing Salud\TFG\codigo\data/{self._filename}_keyboard.parquet", index=False)
+        df.to_parquet(f"./data/{self._filename}_keyboard.parquet", index=False)
 
     def close(self):
         self.save_events()
@@ -50,17 +54,24 @@ class App:
         self.screen.fill(BLACK)
         if self._state.main_status == MainStatus.WaitingForInput:
             self._alert = self._state._current_message
-     
-        if self._state.main_status == MainStatus.Playing: 
-            pygame.draw.circle(self.screen, self._state.stimuli_color.value, self._state.stimuli_pos, ESTIMULO_RADIO)
+
+        if self._state.main_status == MainStatus.Playing:
+            pygame.draw.circle(
+                self.screen,
+                self._state.stimuli_color.value,
+                self._state.stimuli_pos,
+                ESTIMULO_RADIO,
+            )
             self.eyes()
             self._alert = " "
-            
+
             time_remaining = max(0, int(self._state._time_remaining))
-            timer_surface = self.font.render(f"Tiempo restante: {time_remaining}s", True, WHITE)
+            timer_surface = self.font.render(
+                f"Tiempo restante: {time_remaining}s", True, WHITE
+            )
             timer_rect = timer_surface.get_rect(center=(self.width // 2, 50))
             self.screen.blit(timer_surface, timer_rect)
-        
+
         text_surface = self.font.render(self._alert, True, WHITE)
         text_rect = text_surface.get_rect(center=(self.width // 2, self.height // 2))
         self.screen.blit(text_surface, text_rect)
@@ -80,13 +91,15 @@ class App:
                     last_keypress = e.key
                     self.log_event(e, last_keypress)
 
-            
-            self._state.main_logic(cursor_pos=pygame.mouse.get_pos(), keypressed=last_keypress)
+            self._state.main_logic(
+                cursor_pos=pygame.mouse.get_pos(), keypressed=last_keypress
+            )
             self._state.update_timer()
-                
+
             self.render()
             display.flip()
             self.clock.tick(60)
+
 
 if __name__ == "__main__":
     app = App()
