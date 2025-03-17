@@ -1,13 +1,13 @@
+import os
 from datetime import datetime
 from time import time_ns
 
 import pandas as pd
 import pygame
-from pygame import display, event, init, quit
+from game import GameState, MainStatus
+from pygame import display, event, init
 from pygame.font import Font
 from pygame.time import Clock
-
-from game import GameState, MainStatus
 
 # Definimos algunos colores
 WHITE = (255, 255, 255)
@@ -15,7 +15,7 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 
 ESTIMULO_RADIO = 30
-EYES_RADIO = 10
+EYES_SIZE = 60  # Tamaño de los ojos
 
 
 class App:
@@ -28,50 +28,76 @@ class App:
         self.events = []
         self.clock = Clock()
 
+        # Cargar la imagen del ojo
+        self.eye_image = pygame.image.load("eye.png")  # Asegúrate de tener una imagen 'eye.png' en el directorio
+        self.eye_image = pygame.transform.scale(self.eye_image, (EYES_SIZE, EYES_SIZE))  # Redimensionar la imagen
+
     def log_event(self, e, value: int | float | str):
         key_name = pygame.key.name(e.key)
         ts = time_ns()
         event_type = "press" if e.type == pygame.KEYDOWN else "release"
-        self.events.append(
-            {"timestamp": ts, "event": event_type, "key": key_name, "value": value}
-        )
+        self.events.append({
+            "timestamp": ts,
+            "event": event_type,
+            "color": self._state.stimuli_color.value,
+            "key": key_name,
+            "value": value,
+            "error": self._state._errors_count,
+            "iteracion": self._state._current_iteration,
+        })
 
     def save_events(self):
+        save_dir = "./data"  # Usa raw string para evitar problemas con \
+
+        # Crea el directorio si no existe
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Guarda el archivo en formato parquet
         df = pd.DataFrame(self.events)
-        df.to_parquet(f"./data/{self._filename}_keyboard.parquet", index=False)
+        file_path = os.path.join(save_dir, f"{self._filename}_keyboard.parquet")
+        df.to_parquet(file_path, index=False)
 
     def close(self):
-        self.save_events()
         print("Guardando eventos")
-        quit()
+        self.save_events()  # Guarda eventos antes de cerrar pygame
+        pygame.quit()
+        exit()  # Asegura que el bucle se detenga completamente
 
     def eyes(self):
+        # Obtener la posición del cursor
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        pygame.draw.circle(self.screen, RED, (mouse_x, mouse_y), EYES_RADIO)
+
+        # Dibujar la imagen del ojo en lugar de un círculo
+        self.screen.blit(self.eye_image, (mouse_x - EYES_SIZE // 2, mouse_y - EYES_SIZE // 2))  # Centrado en el cursor
         return mouse_x, mouse_y
 
     def render(self):
         self.screen.fill(BLACK)
+
+        # Mostrar el mensaje actual en el juego
         if self._state.main_status == MainStatus.WaitingForInput:
             self._alert = self._state._current_message
 
-        if self._state.main_status == MainStatus.Playing:
-            pygame.draw.circle(
-                self.screen,
-                self._state.stimuli_color.value,
-                self._state.stimuli_pos,
-                ESTIMULO_RADIO,
-            )
-            self.eyes()
-            self._alert = " "
+        elif self._state.main_status == MainStatus.Playing:
+            # Limitar la posición del círculo dentro de los límites de la pantalla
+            x, y = self._state.stimuli_pos
+            x = max(ESTIMULO_RADIO, min(self.width - ESTIMULO_RADIO, x))
+            y = max(ESTIMULO_RADIO, min(self.height - ESTIMULO_RADIO, y))
+
+            # Dibujar el círculo asegurando que no se salga
+            pygame.draw.circle(self.screen, self._state._stimuli_color.value, (x, y), ESTIMULO_RADIO)
+
+            self.eyes()  # Dibujar los ojos (cursor personalizado)
 
             time_remaining = max(0, int(self._state._time_remaining))
-            timer_surface = self.font.render(
-                f"Tiempo restante: {time_remaining}s", True, WHITE
-            )
+            timer_surface = self.font.render(f"Tiempo restante: {time_remaining}s", True, WHITE)
             timer_rect = timer_surface.get_rect(center=(self.width // 2, 50))
             self.screen.blit(timer_surface, timer_rect)
 
+            # Mostrar el mensaje de "Bien hecho" o "Prueba otra vez"
+            self._alert = self._state.current_message
+
+        # Renderizamos el mensaje
         text_surface = self.font.render(self._alert, True, WHITE)
         text_rect = text_surface.get_rect(center=(self.width // 2, self.height // 2))
         self.screen.blit(text_surface, text_rect)
@@ -82,18 +108,21 @@ class App:
         self.screen = display.set_mode((self.width, self.height))
         self.font = Font(None, 36)
 
+        # Ocultar el cursor del sistema
+        pygame.mouse.set_visible(False)
+
         while True:
             last_keypress = None
             for e in event.get():
                 if e.type == pygame.QUIT:
                     self.close()
-                elif e.type == pygame.KEYDOWN or e.type == pygame.KEYUP:
+                elif e.type == pygame.KEYDOWN:
                     last_keypress = e.key
                     self.log_event(e, last_keypress)
+                elif e.type == pygame.KEYUP:
+                    self.log_event(e, last_keypress)
 
-            self._state.main_logic(
-                cursor_pos=pygame.mouse.get_pos(), keypressed=last_keypress
-            )
+            self._state.main_logic(cursor_pos=pygame.mouse.get_pos(), keypressed=last_keypress)
             self._state.update_timer()
 
             self.render()
