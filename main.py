@@ -8,6 +8,7 @@ from game import GameState, MainStatus
 from pygame import display, event, init
 from pygame.font import Font
 from pygame.time import Clock
+from keyboard import Keyboard  #importa la clase Keyboard desde el archivo keyboard.py
 
 # Definimos algunos colores
 WHITE = (255, 255, 255)
@@ -28,9 +29,11 @@ class App:
         self.events = []
         self.clock = Clock()
 
-        # Cargar la imagen del ojo
-        self.eye_image = pygame.image.load("eye.png")  # Asegúrate de tener una imagen 'eye.png' en el directorio
-        self.eye_image = pygame.transform.scale(self.eye_image, (EYES_SIZE, EYES_SIZE))  # Redimensionar la imagen
+        # Crea la instancia de la clase Keyboard
+        self.keyboard = Keyboard("keyboard.jpg", "arrow.png", width=self.width, height=self.height)
+        
+        self.eye_image = pygame.image.load("eye.png") 
+        self.eye_image = pygame.transform.scale(self.eye_image, (EYES_SIZE, EYES_SIZE))
 
     def log_event(self, e, value: int | float | str):
         key_name = pygame.key.name(e.key)
@@ -64,37 +67,32 @@ class App:
         exit()  # Asegura que el bucle se detenga completamente
 
     def eyes(self):
-        # Obtener la posición del cursor
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-
-        # Dibujar la imagen del ojo en lugar de un círculo
+        mouse_x, mouse_y = pygame.mouse.get_pos() #posicion del cursor
         self.screen.blit(self.eye_image, (mouse_x - EYES_SIZE // 2, mouse_y - EYES_SIZE // 2))  # Centrado en el cursor
         return mouse_x, mouse_y
 
     def render(self):
         self.screen.fill(BLACK)
-
-        # Mostrar el mensaje actual en el juego
         if self._state.main_status == MainStatus.WaitingForInput:
             self._alert = self._state._current_message
 
         elif self._state.main_status == MainStatus.Playing:
-            # Limitar la posición del círculo dentro de los límites de la pantalla
+            #Limites x,y en la pantalla
             x, y = self._state.stimuli_pos
             x = max(ESTIMULO_RADIO, min(self.width - ESTIMULO_RADIO, x))
             y = max(ESTIMULO_RADIO, min(self.height - ESTIMULO_RADIO, y))
 
-            # Dibujar el círculo asegurando que no se salga
             pygame.draw.circle(self.screen, self._state._stimuli_color.value, (x, y), ESTIMULO_RADIO)
 
-            self.eyes()  # Dibujar los ojos (cursor personalizado)
+            self.eyes() 
 
             time_remaining = max(0, int(self._state._time_remaining))
             timer_surface = self.font.render(f"Tiempo restante: {time_remaining}s", True, WHITE)
-            timer_rect = timer_surface.get_rect(center=(self.width // 2, 50))
+            #timer_rect = timer_surface.get_rect(center=(self.width // 2, 50))
+            #self.screen.blit(timer_surface, timer_rect)
+            timer_rect = timer_surface.get_rect(topright=(self.width - 10, 10))
             self.screen.blit(timer_surface, timer_rect)
 
-            # Mostrar el mensaje de "Bien hecho" o "Prueba otra vez"
             self._alert = self._state.current_message
 
         # Renderizamos el mensaje
@@ -102,13 +100,17 @@ class App:
         text_rect = text_surface.get_rect(center=(self.width // 2, self.height // 2))
         self.screen.blit(text_surface, text_rect)
 
+        # Actualizar la visibilidad del teclado y renderizar
+        self.keyboard.update_keyboard_visibility()
+        self.keyboard.render(self.screen)
+
     def run(self):
         init()
         display.set_caption("EOG Game")
         self.screen = display.set_mode((self.width, self.height))
         self.font = Font(None, 36)
 
-        # Ocultar el cursor del sistema
+        #oculta la flecha del cursor para que solo se vean los ojo
         pygame.mouse.set_visible(False)
 
         while True:

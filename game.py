@@ -10,6 +10,7 @@ ALIGNMENT_THRESHOLD = 30  # In pixels
 WAITING_FOR_ALIGMENT_THRESHOLD = 20  # In seconds
 WAITING_FOR_KEYPRESS_THRESHOLD = 5  # In seconds
 KEYPRESS_TIMEOUT = 3  # In seconds
+ERROR_DISPLAY_TIME = 2  # Tiempo para mostrar el error antes de continuar
 
 GREEN_KEYS = {
     pygame.K_q,
@@ -23,12 +24,12 @@ GREEN_KEYS = {
     pygame.K_c,
 }
 BLUE_KEYS = {
-    pygame.K_t,
-    pygame.K_y,
-    pygame.K_u,
-    pygame.K_h,
+    pygame.K_i,
+    pygame.K_o,
+    pygame.K_p,
     pygame.K_j,
     pygame.K_k,
+    pygame.K_l,
     pygame.K_b,
     pygame.K_n,
     pygame.K_m,
@@ -44,13 +45,16 @@ class PlayingStatus(IntEnum):
     WaitingForAligment = 0
     WaitingForKeypress = 1
     KeyPress = 2
+    Error_Occurred = 3
+    Keep_iteration = 4
 
 
 class StimuliColor(Enum):
     White = "WHITE"
     Green = "GREEN"
     Blue = "BLUE"
-    Error = "red"
+    Error = "RED"
+    
 
 
 class GameState:
@@ -65,20 +69,29 @@ class GameState:
 
         self._time_remaining = 20
         self._last_update_time = time.time()
-
+        self._waiting_time = 2
+        self._last_iteration_ts = time.time()  # Marca de tiempo para la última iteración
+        self._message_display_ts = None  # Para almacenar cuando se mostró el mensaje
+        self.MESSAGE_DISPLAY_TIME = 2  # Tiempo mínimo para mostrar el mensaje (en segundos)
+        
         self._last_waiting_for_alignment_ts = None
         self._last_waiting_for_keypress_ts = None
         self._last_keypress_ts = None
 
         self._stimuli_pos = (0, 0)
         self._stimuli_color = StimuliColor.White
-        self._stimuli_color_if_error = None
-        self._cursor_pos = (0, 0)
-        self._keep_pos = (0, 0)  # Guardar la posición del estímulo
-        self._keep_iteration = 0
 
+        self._cursor_pos = (0, 0)
+        self._pos_before_error = (0, 0)  # Guardar la posición del estímulo
+        self._color_before_error = StimuliColor.White # Guardar el color del estímulo
+        
+        self._error_display_start_ts = None
         self._errors_count = 0
         self._error = False
+        
+        self._last_iteration_ts = time.time()  # Marca de tiempo para la última iteración
+        self._message_display_ts = None  # Para almacenar cuando se mostró el mensaje
+        self.MESSAGE_DISPLAY_TIME = 2  # Tiempo mínimo para mostrar el mensaje (en segundos)
 
     @property
     def main_status(self) -> MainStatus:
@@ -122,25 +135,28 @@ class GameState:
             random.randint(0, self._screen_size[1]),
         )
 
-    def keep_iteration(self):
-        self._current_message = " "
-        self._playing_status = PlayingStatus.WaitingForKeypress
-        self._last_waiting_for_keypress_ts = time.time()
-        self._stimuli_color = self._stimuli_color_if_error
-        self._stimuli_pos = self._keep_pos
-
     def next_iteration(self):
+        current_time = time.time()
+        if self._message_display_ts:
+            time_elapsed_since_message = current_time - self._message_display_ts
+            if time_elapsed_since_message < self.MESSAGE_DISPLAY_TIME:
+                return  # Si no ha pasado suficiente tiempo, no cambiar de iteración aún
         self._errors_count = 0
         self._current_iteration += 1
         if self._current_iteration < self._iterations_count:
             self.start_iteration()
             self._time_remaining = 20
             self._last_update_time = time.time()
+            self._last_iteration_ts = current_time  # Actualizamos la última marca de tiempo
+            self._message_display_ts = None  # Limpiamos el tiempo de mensaje después de avanzar
         else:
             self._main_status = MainStatus.WaitingForInput
             self._current_message = "Juego terminado. Presione espacio para reiniciar."
-
-    @property
+            
+    def show_message(self, message: str):
+        self._current_message = message
+        self._message_display_ts = time.time()  # Guardamos el tiempo en el que se muestra el mensaje
+        
     def is_aligned(self) -> bool:
         stimuli_x, stimuli_y = self._stimuli_pos
         cursor_x, cursor_y = self._cursor_pos
@@ -165,14 +181,20 @@ class GameState:
             self._time_remaining -= elapsed  # Restar tiempo transcurrido
             if self._time_remaining <= 0:  # Si el tiempo llega a 0, pasar a la siguiente iteración
                 self.next_iteration()
-
+                    
     def handle_error(self):
         self._errors_count += 1
-        self._stimuli_color = StimuliColor.Error  # Cambia el color a rojo cuando ocurre el error
-        # Si ya se han acumulado 3 errores, pasa a la siguiente iteración
-        if self._errors_count >= 3:
+        self._color_before_error = self._stimuli_color
+        self._pos_before_error = self._stimuli_pos
+        self._stimuli_color = StimuliColor.Error
+        self.show_message("Error! Prueba otra vez")
+        self._playing_status = PlayingStatus.Error_Occurred
+        self._error_display_start_ts = time.time()
+        # Si ya has fallado tres veces, muestra el mensaje de "No has logrado presionar la tecla correcta"
+        if self._errors_count == 3:
+            self.show_message("No has logrado presionar la tecla correcta")
             self.next_iteration()
-
+        
     def main_logic(self, cursor_pos: tuple[int, int], keypressed: int | None = None):
         if self._main_status == MainStatus.WaitingForInput:
             if keypressed == pygame.K_SPACE:
@@ -186,38 +208,47 @@ class GameState:
             time_elapsed = current_time - self._last_waiting_for_alignment_ts
             if time_elapsed > WAITING_FOR_ALIGMENT_THRESHOLD:
                 self.next_iteration()
-            elif self.is_aligned:
+            elif self.is_aligned():
                 self._playing_status = PlayingStatus.WaitingForKeypress
                 self._last_waiting_for_keypress_ts = time.time()
                 self._stimuli_color = random.choice([StimuliColor.Green, StimuliColor.Blue])
 
         elif self._playing_status == PlayingStatus.WaitingForKeypress:
-            if not self.is_aligned:
+            if not self.is_aligned():
                 self._playing_status = PlayingStatus.WaitingForAligment
                 self._stimuli_color = StimuliColor.White
             else:
                 if keypressed is not None:
                     if self.is_error(keypressed):
-                        print(f"{self._errors_count=}")
-                        if self._errors_count >= 3:
-                            self._current_message = "No has logrado presional la tecla correcta"
-                            self.next_iteration()
-                        else:
-                            self._errors_count += 1
-                            self._stimuli_color = StimuliColor.Error
-                            self._current_message = "Prueba otra vez! Has presionado: " + pygame.key.name(keypressed)
-
+                        self.handle_error()       
                     else:
-                        self._current_message = "Bien hecho! Has presionado: " + pygame.key.name(keypressed)
+                        self.show_message(f"Bien hecho! Has presionado: {pygame.key.name(keypressed)}")
                         self.next_iteration()
-
                 else:
-                    # Control de tiempo máximo
                     time_elapsed = current_time - self._last_waiting_for_keypress_ts
                     if time_elapsed > WAITING_FOR_KEYPRESS_THRESHOLD:
                         self.next_iteration()
 
-        elif self._playing_status == PlayingStatus.KeyPress:
-            time_elapsed = current_time - self._last_keypress_ts
-            if time_elapsed > KEYPRESS_TIMEOUT:
+        elif self._playing_status == PlayingStatus.Error_Occurred:
+            # Mantener el estímulo en rojo durante 2 segundos
+            if current_time - self._error_display_start_ts <= ERROR_DISPLAY_TIME:
+                self._stimuli_color = StimuliColor.Error
+            else:
+                # Después de los 2 segundos, vuelve al estado de mantener la iteración
+                self._playing_status = PlayingStatus.Keep_iteration
+                self._stimuli_color = self._color_before_error
+                self._stimuli_pos = self._pos_before_error
+                self._error_display_start_ts = None  # Limpiar el tiempo de error
+
+        elif self._playing_status == PlayingStatus.Keep_iteration:
+            # El estímulo se mantiene igual durante el tiempo restante de la iteración
+            if keypressed is not None:
+                if self.is_error(keypressed):
+                    self.handle_error()     
+                else:
+                    self.show_message(f"Bien hecho! Has presionado: {pygame.key.name(keypressed)}")
+                    self.next_iteration()
+
+            time_elapsed = current_time - self._last_update_time
+            if self._time_remaining - time_elapsed <= 0:
                 self.next_iteration()
