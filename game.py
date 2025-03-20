@@ -70,8 +70,8 @@ class GameState:
         self._time_remaining = 20
         self._last_update_time = time.time()
         self._waiting_time = 2
-        self._last_iteration_ts = time.time()  # Marca de tiempo para la última iteración
-        self._message_display_ts = None  # Para almacenar cuando se mostró el mensaje
+        self._last_iteration_ts = time.time()  
+        self._message_display_ts = None  # Guarda cuando se mostró el mensaje
         self.MESSAGE_DISPLAY_TIME = 2  # Tiempo mínimo para mostrar el mensaje (en segundos)
         
         self._last_waiting_for_alignment_ts = None
@@ -82,16 +82,13 @@ class GameState:
         self._stimuli_color = StimuliColor.White
 
         self._cursor_pos = (0, 0)
-        self._pos_before_error = (0, 0)  # Guardar la posición del estímulo
-        self._color_before_error = StimuliColor.White # Guardar el color del estímulo
+        self._pos_before_error = (0, 0)  
+        self._color_before_error = StimuliColor.White # Lo ponemos tipo enum, si no no funciona, white por defecto
         
         self._error_display_start_ts = None
         self._errors_count = 0
         self._error = False
         
-        self._last_iteration_ts = time.time()  # Marca de tiempo para la última iteración
-        self._message_display_ts = None  # Para almacenar cuando se mostró el mensaje
-        self.MESSAGE_DISPLAY_TIME = 2  # Tiempo mínimo para mostrar el mensaje (en segundos)
 
     @property
     def main_status(self) -> MainStatus:
@@ -140,14 +137,14 @@ class GameState:
         if self._message_display_ts:
             time_elapsed_since_message = current_time - self._message_display_ts
             if time_elapsed_since_message < self.MESSAGE_DISPLAY_TIME:
-                return  # Si no ha pasado suficiente tiempo, no cambiar de iteración aún
+                return  # No cambia a la siguiente iteración si no ha pasado el tiempo suficiente
         self._errors_count = 0
         self._current_iteration += 1
         if self._current_iteration < self._iterations_count:
             self.start_iteration()
             self._time_remaining = 20
             self._last_update_time = time.time()
-            self._last_iteration_ts = current_time  # Actualizamos la última marca de tiempo
+            self._last_iteration_ts = current_time 
             self._message_display_ts = None  # Limpiamos el tiempo de mensaje después de avanzar
         else:
             self._main_status = MainStatus.WaitingForInput
@@ -155,7 +152,7 @@ class GameState:
             
     def show_message(self, message: str):
         self._current_message = message
-        self._message_display_ts = time.time()  # Guardamos el tiempo en el que se muestra el mensaje
+        self._message_display_ts = time.time() 
         
     def is_aligned(self) -> bool:
         stimuli_x, stimuli_y = self._stimuli_pos
@@ -175,11 +172,11 @@ class GameState:
     def update_timer(self):
         current_time = time.time()
         elapsed = current_time - self._last_update_time
-        self._last_update_time = current_time  # Actualizar el último tiempo
+        self._last_update_time = current_time  
 
         if self.main_status == MainStatus.Playing:
-            self._time_remaining -= elapsed  # Restar tiempo transcurrido
-            if self._time_remaining <= 0:  # Si el tiempo llega a 0, pasar a la siguiente iteración
+            self._time_remaining -= elapsed  
+            if self._time_remaining <= 0:  
                 self.next_iteration()
                     
     def handle_error(self):
@@ -190,7 +187,7 @@ class GameState:
         self.show_message("Error! Prueba otra vez")
         self._playing_status = PlayingStatus.Error_Occurred
         self._error_display_start_ts = time.time()
-        # Si ya has fallado tres veces, muestra el mensaje de "No has logrado presionar la tecla correcta"
+        
         if self._errors_count == 3:
             self.show_message("No has logrado presionar la tecla correcta")
             self.next_iteration()
@@ -208,6 +205,7 @@ class GameState:
             time_elapsed = current_time - self._last_waiting_for_alignment_ts
             if time_elapsed > WAITING_FOR_ALIGMENT_THRESHOLD:
                 self.next_iteration()
+                
             elif self.is_aligned():
                 self._playing_status = PlayingStatus.WaitingForKeypress
                 self._last_waiting_for_keypress_ts = time.time()
@@ -230,18 +228,18 @@ class GameState:
                         self.next_iteration()
 
         elif self._playing_status == PlayingStatus.Error_Occurred:
-            # Mantener el estímulo en rojo durante 2 segundos
+            #Se mantiene el estimulo visual en rojo 2 segs
             if current_time - self._error_display_start_ts <= ERROR_DISPLAY_TIME:
                 self._stimuli_color = StimuliColor.Error
             else:
-                # Después de los 2 segundos, vuelve al estado de mantener la iteración
+                #Despues de 2 segs se mantiene la iteracion, no se reinicia contador
                 self._playing_status = PlayingStatus.Keep_iteration
                 self._stimuli_color = self._color_before_error
                 self._stimuli_pos = self._pos_before_error
                 self._error_display_start_ts = None  # Limpiar el tiempo de error
 
         elif self._playing_status == PlayingStatus.Keep_iteration:
-            # El estímulo se mantiene igual durante el tiempo restante de la iteración
+            #El estimulo visual se mantiene en la misma posicion y color (solo cambiando a rojo si hay error)
             if keypressed is not None:
                 if self.is_error(keypressed):
                     self.handle_error()     
