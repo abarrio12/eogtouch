@@ -103,6 +103,3 @@ class Keyboard:
         font = pygame.font.SysFont("Comic Sans MS", int(height * 0.4))
         text = font.render("ESPACIO", True, (255, 255, 255))
         screen.blit(text, text.get_rect(center=(start_x + width // 2, y + height // 2)))
-
-    def render(self, screen):
-        pass  # Método preparado para usar el teclado en tiempo de juego, si lo necesitas después
