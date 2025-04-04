@@ -8,16 +8,12 @@ from game import GameState, MainStatus
 from pygame import display, event, init
 from pygame.font import Font
 from pygame.time import Clock
-from keyboard import Keyboard  #importa la clase Keyboard desde el archivo keyboard.py
+from keyboard import Keyboard
 
-# Definimos algunos colores
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-
 ESTIMULO_RADIO = 30
-EYES_SIZE = 60  # Tamaño de los ojos
-
+EYES_SIZE = 60
 
 class App:
     def __init__(self, width=800, height=600, max_iterations=15):
@@ -28,14 +24,14 @@ class App:
         self.screen, self.font = None, None
         self.events = []
         self.clock = Clock()
-
-        # Crea la instancia de la clase Keyboard
-        self.keyboard = Keyboard("keyboard.jpg", "arrow.png", width=self.width, height=self.height)
         
-        self.eye_image = pygame.image.load("eye.png") 
+        self.eye_image = pygame.image.load("eye.png")
         self.eye_image = pygame.transform.scale(self.eye_image, (EYES_SIZE, EYES_SIZE))
 
-    def log_event(self, e, value: int | float | str):
+        self.keyboard = Keyboard()  
+        
+
+    def log_event(self, e, value):
         key_name = pygame.key.name(e.key)
         ts = time_ns()
         event_type = "press" if e.type == pygame.KEYDOWN else "release"
@@ -50,68 +46,64 @@ class App:
         })
 
     def save_events(self):
-        save_dir = "./data"  # Usa raw string para evitar problemas con \
-
-        # Crea el directorio si no existe
-        os.makedirs(save_dir, exist_ok=True)
-
-        # Guarda el archivo en formato parquet
+        os.makedirs("./data", exist_ok=True)
         df = pd.DataFrame(self.events)
-        file_path = os.path.join(save_dir, f"{self._filename}_keyboard.parquet")
-        df.to_parquet(file_path, index=False)
+        df.to_parquet(f"./data/{self._filename}_keyboard.parquet", index=False)
 
     def close(self):
         print("Guardando eventos")
-        self.save_events()  # Guarda eventos antes de cerrar pygame
+        self.save_events()
         pygame.quit()
-        exit()  # Asegura que el bucle se detenga completamente
-
+        exit()
+    
     def eyes(self):
-        mouse_x, mouse_y = pygame.mouse.get_pos() #posicion del cursor
-        self.screen.blit(self.eye_image, (mouse_x - EYES_SIZE // 2, mouse_y - EYES_SIZE // 2))  # Centrado en el cursor
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.screen.blit(self.eye_image, (mouse_x - EYES_SIZE // 2, mouse_y - EYES_SIZE // 2))
         return mouse_x, mouse_y
 
-    def render(self):
-        self.screen.fill(BLACK)
-        if self._state.main_status == MainStatus.WaitingForInput:
-            self._alert = self._state._current_message
 
-        elif self._state.main_status == MainStatus.Playing:
-            #Limites x,y en la pantalla
+    def render(self):
+        if self._state.main_status == MainStatus.WaitingForInput:
+            self.keyboard.render_intro(self.screen, self.width, self.height)
+            return
+
+        self.screen.fill(BLACK)
+
+        if self._state.main_status == MainStatus.Playing:
             x, y = self._state.stimuli_pos
             x = max(ESTIMULO_RADIO, min(self.width - ESTIMULO_RADIO, x))
             y = max(ESTIMULO_RADIO, min(self.height - ESTIMULO_RADIO, y))
-
-            pygame.draw.circle(self.screen, self._state._stimuli_color.value, (x, y), ESTIMULO_RADIO)
-
-            self.eyes() 
-
+            pygame.draw.circle(self.screen, self._state.stimuli_color.value, (x, y), ESTIMULO_RADIO)
+            self.eyes()
+            
+            # Dibujando el temporizador
             time_remaining = max(0, int(self._state._time_remaining))
             timer_surface = self.font.render(f"Tiempo restante: {time_remaining}s", True, WHITE)
-            #timer_rect = timer_surface.get_rect(center=(self.width // 2, 50))
-            #self.screen.blit(timer_surface, timer_rect)
-            timer_rect = timer_surface.get_rect(topright=(self.width - 10, 10))
-            self.screen.blit(timer_surface, timer_rect)
+            self.screen.blit(timer_surface, timer_surface.get_rect(topright=(self.width - 10, 10)))
 
-            self._alert = self._state.current_message
+            # Estilo mensaje feedback
+            alert = self._state.current_message
+            text_surface = self.font.render(alert, True, WHITE)
+            self.screen.blit(text_surface, text_surface.get_rect(center=(self.width // 2, self.height // 2)))
 
-        # Renderizamos el mensaje
-        text_surface = self.font.render(self._alert, True, WHITE)
-        text_rect = text_surface.get_rect(center=(self.width // 2, self.height // 2))
-        self.screen.blit(text_surface, text_rect)
-
-        # Actualizar la visibilidad del teclado y renderizar
-        self.keyboard.update_keyboard_visibility()
-        self.keyboard.render(self.screen)
+            self.keyboard.render(self.screen)
 
     def run(self):
         init()
         display.set_caption("EOG Game")
+
+        # Obtengo el tamaño de la pantalla para que se adapte a cualquier pantalla
+        info = pygame.display.Info()
+        self.width, self.height = info.current_w, info.current_h
+
+        # Ajustamos para que no se superponga a la barra de tareas -> poder presionar quit
+        self.height -= 60  # tamaño de la barra de tareas
+
         self.screen = display.set_mode((self.width, self.height))
+
         self.font = Font(None, 36)
 
-        #oculta la flecha del cursor para que solo se vean los ojo
-        pygame.mouse.set_visible(False)
+        pygame.mouse.set_visible(False)  # Ocultar el cursor del raton
 
         while True:
             last_keypress = None
@@ -121,12 +113,12 @@ class App:
                 elif e.type == pygame.KEYDOWN:
                     last_keypress = e.key
                     self.log_event(e, last_keypress)
+
                 elif e.type == pygame.KEYUP:
                     self.log_event(e, last_keypress)
 
             self._state.main_logic(cursor_pos=pygame.mouse.get_pos(), keypressed=last_keypress)
             self._state.update_timer()
-
             self.render()
             display.flip()
             self.clock.tick(60)

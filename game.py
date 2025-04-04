@@ -82,6 +82,9 @@ class GameState:
 
         self._stimuli_pos = (0, 0)
         self._stimuli_color = StimuliColor.White
+        
+        self._min_distance_new_stimuli = 250  # Distancia mínima entre estímulos
+        self._previous_stimuli_pos = None
 
         self._cursor_pos = (0, 0)
         self._pos_before_error = (0, 0)
@@ -129,10 +132,20 @@ class GameState:
         self._last_waiting_for_alignment_ts = time.time()
         self._alignment_color = random.choice([StimuliColor.Green, StimuliColor.Blue])
         self._stimuli_color = StimuliColor.White
-        self._stimuli_pos = (
-            random.randint(0, self._screen_size[0]),
-            random.randint(0, self._screen_size[1]),
-        )
+        while True:
+            new_pos = (
+                random.randint(0, self._screen_size[0]),
+                random.randint(0, self._screen_size[1]),
+            )
+            if self._previous_stimuli_pos is None:
+                break
+            distance = math.dist(new_pos, self._previous_stimuli_pos)
+            if distance >= self._min_distance_new_stimuli:
+                break
+        
+        self._stimuli_pos = new_pos
+        self._previous_stimuli_pos = new_pos  # Guarda la nueva para la siguiente comparación
+        self._errors_count = 0
 
     def next_iteration(self):
         current_time = time.time()
@@ -193,7 +206,6 @@ class GameState:
         self._stimuli_color = StimuliColor.Error
         self.show_message("Error! Prueba otra vez")
         self._error_display_start_ts = time.time()
-
         if self._errors_count == 3:
             self.show_message("No has logrado presionar la tecla correcta")
 
@@ -210,6 +222,7 @@ class GameState:
             time_elapsed = current_time - self._last_waiting_for_alignment_ts
             if time_elapsed > WAITING_FOR_ALIGMENT_THRESHOLD:
                 self.next_iteration()
+                print("hola")
 
             elif self.is_aligned():
                 self._playing_status = PlayingStatus.WaitingForKeypress
@@ -224,6 +237,8 @@ class GameState:
                         self._stimuli_color = self._alignment_color
                     else:
                         self._stimuli_color = StimuliColor.White
+                    
+                    self._last_waiting_for_keypress_ts = current_time    
                     self._error_display_start_ts = None
                     self._current_message = ""
                     self._message_display_ts = None
