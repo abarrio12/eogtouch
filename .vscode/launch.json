@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run eogtouch",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "uv",
+      "args": [
+        "run",
+        "eogtouch",
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": false
+      }
+    ]
+}

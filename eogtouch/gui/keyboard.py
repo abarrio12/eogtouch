@@ -86,14 +86,14 @@ class Keyboard:
         )
 
         # Calculamos el borde inferior del teclado
-        teclado_height = 3 * (key_size + padding) - padding
-        teclado_bottom = start_y + teclado_height
+        keyboard_height = 3 * (key_size + padding) - padding
+        keyboard_bottom = start_y + keyboard_height
 
         # Posición de la barra espaciadora justo debajo del teclado
         spacebar_width = int(0.3 * width)
         spacebar_height = int(0.07 * height)
         spacebar_x = (width - spacebar_width) // 2
-        spacebar_y = teclado_bottom + padding  # asi la ponemos pegada al teclado
+        spacebar_y = keyboard_bottom + padding  # asi la ponemos pegada al teclado
 
         # Dibujamos la barra espaciadora centrada
         self.draw_spacebar(

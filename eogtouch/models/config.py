@@ -1,15 +1,11 @@
 import pygame
 
 # Constantes
-ALIGNMENT_THRESHOLD = 30  # In pixels
-WAITING_FOR_ALIGMENT_THRESHOLD = 20  # In seconds
-WAITING_FOR_KEYPRESS_THRESHOLD = 5  # In seconds
-KEYPRESS_TIMEOUT = 3  # In seconds
-ERROR_DISPLAY_TIME = 2  # Tiempo para mostrar el error antes de continuar
-
-# TODO:  Usar esta constante para controlar si se muestra o no
-# retroalimentación de la tecla presionada
-SHOW_KEYPRESSED = False
+alignment_threshold = 30  # In pixels
+waiting_for_alignment_threshold = 20  # In seconds
+waiting_for_keypress_threshold = 5  # In seconds
+keypress_timeout = 3  # In seconds
+error_display_time = 2  # Tiempo para mostrar el error antes de continuar
 
 GREEN_KEYS = {
     pygame.K_q,

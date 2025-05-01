@@ -1,12 +1,61 @@
 import math
 import random
 import time
+from enum import Enum, IntEnum
 
 import pygame
 
-from eogtouch.models import config
+# Constantes
+ALIGNMENT_THRESHOLD = 30  # In pixels
+WAITING_FOR_ALIGMENT_THRESHOLD = 20  # In seconds
+WAITING_FOR_KEYPRESS_THRESHOLD = 5  # In seconds
+KEYPRESS_TIMEOUT = 3  # In seconds
+ERROR_DISPLAY_TIME = 2  # Tiempo para mostrar el error antes de continuar
 
-from .enums import MainStatus, PlayingStatus, StimuliColor
+# TODO:  Usar esta constante para controlar si se muestra o no
+# retroalimentación de la tecla presionada
+SHOW_KEYPRESSED = False
+
+GREEN_KEYS = {
+    pygame.K_q,
+    pygame.K_w,
+    pygame.K_e,
+    pygame.K_a,
+    pygame.K_s,
+    pygame.K_d,
+    pygame.K_z,
+    pygame.K_x,
+    pygame.K_c,
+}
+BLUE_KEYS = {
+    pygame.K_i,
+    pygame.K_o,
+    pygame.K_p,
+    pygame.K_j,
+    pygame.K_k,
+    pygame.K_l,
+    pygame.K_b,
+    pygame.K_n,
+    pygame.K_m,
+}
+
+
+class MainStatus(IntEnum):
+    WaitingForInput = 0
+    Playing = 1
+
+
+class PlayingStatus(IntEnum):
+    WaitingForAligment = 0
+    WaitingForKeypress = 1
+    KeyPress = 2
+
+
+class StimuliColor(Enum):
+    White = "WHITE"
+    Green = "GREEN"
+    Blue = "BLUE"
+    Error = "RED"
 
 
 class GameState:
@@ -33,10 +82,8 @@ class GameState:
 
         self._stimuli_pos = (0, 0)
         self._stimuli_color = StimuliColor.White
-
         
         self._min_distance_new_stimuli = 500  # Distancia mínima entre estímulos
-
         self._previous_stimuli_pos = None
 
         self._cursor_pos = (0, 0)
@@ -95,7 +142,7 @@ class GameState:
             distance = math.dist(new_pos, self._previous_stimuli_pos)
             if distance >= self._min_distance_new_stimuli:
                 break
-
+        
         self._stimuli_pos = new_pos
         self._previous_stimuli_pos = new_pos  # Guarda la nueva para la siguiente comparación
         self._errors_count = 0
@@ -132,13 +179,13 @@ class GameState:
         cursor_x, cursor_y = self._cursor_pos
         distance = math.sqrt((stimuli_x - cursor_x) ** 2 + (stimuli_y - cursor_y) ** 2)
 
-        return distance <= config.alignment_threshold
+        return distance <= ALIGNMENT_THRESHOLD
 
     def is_error(self, keypress: int) -> bool:
         if self._stimuli_color == StimuliColor.Green:
-            return keypress not in config.GREEN_KEYS
+            return keypress not in GREEN_KEYS
         if self._stimuli_color == StimuliColor.Blue:
-            return keypress not in config.BLUE_KEYS
+            return keypress not in BLUE_KEYS
 
         return True
 
@@ -173,8 +220,9 @@ class GameState:
 
         if self._playing_status == PlayingStatus.WaitingForAligment:
             time_elapsed = current_time - self._last_waiting_for_alignment_ts
-            if time_elapsed > config.waiting_for_alignment_threshold:
+            if time_elapsed > WAITING_FOR_ALIGMENT_THRESHOLD:
                 self.next_iteration()
+                print("hola")
 
             elif self.is_aligned():
                 self._playing_status = PlayingStatus.WaitingForKeypress
@@ -184,13 +232,13 @@ class GameState:
         elif self._playing_status == PlayingStatus.WaitingForKeypress:
             if self._error_display_start_ts is not None:
                 error_time = current_time - self._error_display_start_ts
-                if error_time >= config.error_display_time:
+                if error_time >= ERROR_DISPLAY_TIME:
                     if self.is_aligned():
                         self._stimuli_color = self._alignment_color
                     else:
                         self._stimuli_color = StimuliColor.White
-
-                    self._last_waiting_for_keypress_ts = current_time
+                    
+                    self._last_waiting_for_keypress_ts = current_time    
                     self._error_display_start_ts = None
                     self._current_message = ""
                     self._message_display_ts = None
@@ -210,5 +258,5 @@ class GameState:
                         self.next_iteration()
                 else:
                     time_elapsed = current_time - self._last_waiting_for_keypress_ts
-                    if time_elapsed > config.waiting_for_keypress_threshold:
+                    if time_elapsed > WAITING_FOR_KEYPRESS_THRESHOLD:
                         self.next_iteration()

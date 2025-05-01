@@ -1,4 +1,4 @@
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-ESTIMULO_RADIO = 30
-EYES_SIZE = 60
+stimulus_radio = 30
+eyes_size = 60

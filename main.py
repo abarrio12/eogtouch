@@ -4,16 +4,16 @@ from time import time_ns
 
 import pandas as pd
 import pygame
+from game import GameState, MainStatus
 from pygame import display, event, init
 from pygame.font import Font
 from pygame.time import Clock
+from keyboard import Keyboard
 
-from eogtouch.gui import config
-from eogtouch.models import GameState, MainStatus
-
-from .imgs import img_path
-from .keyboard import Keyboard
-
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+ESTIMULO_RADIO = 30
+EYES_SIZE = 60
 
 class App:
     def __init__(self, width=800, height=600, max_iterations=15):
@@ -24,11 +24,12 @@ class App:
         self.screen, self.font = None, None
         self.events = []
         self.clock = Clock()
+        
+        self.eye_image = pygame.image.load("eye.png")
+        self.eye_image = pygame.transform.scale(self.eye_image, (EYES_SIZE, EYES_SIZE))
 
-        self.eye_image = pygame.image.load(img_path("eye.png"))
-        self.eye_image = pygame.transform.scale(self.eye_image, (config.eyes_size, config.eyes_size))
-
-        self.keyboard = Keyboard()
+        self.keyboard = Keyboard()  
+        
 
     def log_event(self, e, value):
         key_name = pygame.key.name(e.key)
@@ -50,37 +51,39 @@ class App:
         df.to_parquet(f"./data/{self._filename}_keyboard.parquet", index=False)
 
     def close(self):
+        print("Guardando eventos")
         self.save_events()
         pygame.quit()
         exit()
-
+    
     def eyes(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        self.screen.blit(self.eye_image, (mouse_x - config.eyes_size // 2, mouse_y - config.eyes_size // 2))
+        self.screen.blit(self.eye_image, (mouse_x - EYES_SIZE // 2, mouse_y - EYES_SIZE // 2))
         return mouse_x, mouse_y
+
 
     def render(self):
         if self._state.main_status == MainStatus.WaitingForInput:
             self.keyboard.render_intro(self.screen, self.width, self.height)
             return
 
-        self.screen.fill(config.BLACK)
+        self.screen.fill(BLACK)
 
         if self._state.main_status == MainStatus.Playing:
             x, y = self._state.stimuli_pos
-            x = max(config.stimulus_radio, min(self.width - config.stimulus_radio, x))
-            y = max(config.stimulus_radio, min(self.height - config.stimulus_radio, y))
-            pygame.draw.circle(self.screen, self._state.stimuli_color.value, (x, y), config.stimulus_radio)
+            x = max(ESTIMULO_RADIO, min(self.width - ESTIMULO_RADIO, x))
+            y = max(ESTIMULO_RADIO, min(self.height - ESTIMULO_RADIO, y))
+            pygame.draw.circle(self.screen, self._state.stimuli_color.value, (x, y), ESTIMULO_RADIO)
             self.eyes()
-
+            
             # Dibujando el temporizador
             time_remaining = max(0, int(self._state._time_remaining))
-            timer_surface = self.font.render(f"Tiempo restante: {time_remaining}s", True, config.WHITE)
+            timer_surface = self.font.render(f"Tiempo restante: {time_remaining}s", True, WHITE)
             self.screen.blit(timer_surface, timer_surface.get_rect(topright=(self.width - 10, 10)))
 
             # Estilo mensaje feedback
             alert = self._state.current_message
-            text_surface = self.font.render(alert, True, config.WHITE)
+            text_surface = self.font.render(alert, True, WHITE)
             self.screen.blit(text_surface, text_surface.get_rect(center=(self.width // 2, self.height // 2)))
 
          
@@ -88,9 +91,9 @@ class App:
     def run(self):
         init()
         display.set_caption("EOG Game")
+        self.screen = display.set_mode((0, 0), pygame.FULLSCREEN)
         info = pygame.display.Info()
         self.width, self.height = info.current_w, info.current_h
-        self.screen = display.set_mode((self.width, self.height))
         self.font = Font(None, 36)
         pygame.mouse.set_visible(False)  # Ocultar el cursor del raton
 
@@ -114,4 +117,8 @@ class App:
             self._state.update_timer()
             self.render()
             display.flip()
-            self.clock.tick(60)
+            self.clock.tick(60)  # Limitar a 60 FPS
+
+if __name__ == "__main__":
+    app = App()
+    app.run()
