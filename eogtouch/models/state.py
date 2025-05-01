@@ -23,8 +23,8 @@ class GameState:
         self._last_update_time = time.time()
         self._waiting_time = 2
         self._last_iteration_ts = time.time()
-        self._message_display_ts = None  # Guarda cuando se mostró el mensaje
-        self._message_display_time = 2  # Tiempo mínimo para mostrar el mensaje (en segundos)
+        self._message_display_ts = None  # saved time when message was displayed
+        self._message_display_time = 2  # min time to show message in seconds
         self._alignment_color = None
 
         self._last_waiting_for_alignment_ts = None
@@ -34,14 +34,11 @@ class GameState:
         self._stimuli_pos = (0, 0)
         self._stimuli_color = StimuliColor.White
 
-        
-        self._min_distance_new_stimuli = 500  # Distancia mínima entre estímulos
-
+        self._min_distance_new_stimuli = 500  # min distance between stimuli
         self._previous_stimuli_pos = None
-
         self._cursor_pos = (0, 0)
         self._pos_before_error = (0, 0)
-        self._color_before_error = StimuliColor.White  # Lo ponemos tipo enum, si no no funciona, white por defecto
+        self._color_before_error = StimuliColor.White  # save color before error to restore it later
 
         self._error_display_start_ts = None
         self._errors_count = 0
@@ -97,7 +94,7 @@ class GameState:
                 break
 
         self._stimuli_pos = new_pos
-        self._previous_stimuli_pos = new_pos  # Guarda la nueva para la siguiente comparación
+        self._previous_stimuli_pos = new_pos  # saves new position for comparison in next iteration 
         self._errors_count = 0
 
     def next_iteration(self):
@@ -111,14 +108,14 @@ class GameState:
         if self._message_display_ts:
             time_elapsed_since_message = current_time - self._message_display_ts
             if time_elapsed_since_message < self._message_display_time:
-                return  # No cambia a la siguiente iteración si no ha pasado el tiempo suficiente
+                return  # if not enough time has passed, do not continue
         self._current_iteration += 1
         if self._current_iteration < self._iterations_count:
             self.start_iteration()
             self._time_remaining = 20
             self._last_update_time = time.time()
             self._last_iteration_ts = current_time
-            self._message_display_ts = None  # Limpiamos el tiempo de mensaje después de avanzar
+            self._message_display_ts = None  # clean message display time before next iteration
         else:
             self._main_status = MainStatus.WaitingForInput
             self._current_message = "Juego terminado. Presione espacio para reiniciar."
