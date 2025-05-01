@@ -1,4 +1,5 @@
 import glob
+
 import pandas as pd
 
 # Buscar todos los archivos .parquet en ./data/

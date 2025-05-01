@@ -1,7 +1,7 @@
 [project]
-name = "eog-game-touch"
+name = "eogtouch"
 version = "0.1.0"
-description = "Add your description here"
+description = "A game to measure coordination of tactile systems and ocular systems"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -11,50 +11,28 @@ dependencies = [
     "ruff>=0.11.0",
 ]
 
+[project.gui-scripts]
+eogtouch = "eogtouch:main"
 
 [tool.ruff]
 preview = true
 respect-gitignore = true
 unsafe-fixes = false
-
 line-length = 120
 indent-width = 4
-
 target-version = "py312"
-
 exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
+    ".bzr", ".direnv", ".eggs", ".git", ".hg", ".mypy_cache", ".nox", ".pants.d",
+    ".ruff_cache", ".svn", ".tox", ".venv", "__pypackages__", "_build",
+    "buck-out", "build", "dist", "node_modules", "venv",
 ]
-
-src = ["apps", "config", "ext", "intranets", "t3", "tests"]
+src = ["eogtouch"]
 
 [tool.ruff.lint]
 select = ["E", "F"]
 extend-select = ["T201"]
-ignore = [
-    "E266",
-]
-
+ignore = ["E266"]
 unfixable = []
-
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.lint.mccabe]
@@ -65,3 +43,16 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[dependency-groups]
+dev = [
+    "python-lsp-server>=1.12.2",
+    "ruff>=0.11.0",
+]
+
+[tool.setuptools]
+packages = ["eogtouch"]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"

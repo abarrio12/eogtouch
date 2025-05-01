@@ -1,12 +1,13 @@
 import pygame
 
+
 class Keyboard:
     def render_intro(self, screen, width, height):
         # Limpia la pantalla con fondo blanco
         screen.fill((255, 255, 255))
 
         # Nota: Todas las figuras y fuentes se escalan según el tamaño de la pantalla y se posicionan segun porcentajes
-        
+
         # Fuente escalada según el tamaño de pantalla
         title_font = pygame.font.SysFont("Comic Sans MS", int(0.08 * height), bold=True)
         subtitle_font = pygame.font.SysFont("Comic Sans MS", int(0.04 * height))
@@ -20,7 +21,7 @@ class Keyboard:
         intro_lines = [
             "Siga la figura con la mirada y cuando esta",
             "cambie de color presione una de las teclas",
-            "que coincidan con este"
+            "que coincidan con este",
         ]
         for i, line in enumerate(intro_lines):
             text = subtitle_font.render(line, True, (0, 0, 0))
@@ -59,14 +60,30 @@ class Keyboard:
         start_y = int(0.45 * height)
 
         # Dibujamos el bloque izquierdo del teclado (teclas verdes)
-        self.draw_keys(screen, [["Q", "W", "E"], ["A", "S", "D"], ["Z", "X", "C"]],
-                       start_x=left_start_x, start_y=start_y, color=(0, 153, 0),
-                       row_offsets=left_offsets, key_size=key_size, padding=padding, font_size=font_size)
+        self.draw_keys(
+            screen,
+            [["Q", "W", "E"], ["A", "S", "D"], ["Z", "X", "C"]],
+            start_x=left_start_x,
+            start_y=start_y,
+            color=(0, 153, 0),
+            row_offsets=left_offsets,
+            key_size=key_size,
+            padding=padding,
+            font_size=font_size,
+        )
 
         # Dibujamos el bloque derecho del teclado (teclas azules)
-        self.draw_keys(screen, [["I", "O", "P"], ["J", "K", "L"], ["B", "N", "M"]],
-                       start_x=right_start_x, start_y=start_y, color=(0, 102, 204),
-                       row_offsets=right_offsets, key_size=key_size, padding=padding, font_size=font_size)
+        self.draw_keys(
+            screen,
+            [["I", "O", "P"], ["J", "K", "L"], ["B", "N", "M"]],
+            start_x=right_start_x,
+            start_y=start_y,
+            color=(0, 102, 204),
+            row_offsets=right_offsets,
+            key_size=key_size,
+            padding=padding,
+            font_size=font_size,
+        )
 
         # Calculamos el borde inferior del teclado
         teclado_height = 3 * (key_size + padding) - padding
@@ -79,8 +96,14 @@ class Keyboard:
         spacebar_y = teclado_bottom + padding  # asi la ponemos pegada al teclado
 
         # Dibujamos la barra espaciadora centrada
-        self.draw_spacebar(screen, start_x=spacebar_x, y=spacebar_y,
-                           width=spacebar_width, height=spacebar_height, color=(100, 100, 100))
+        self.draw_spacebar(
+            screen,
+            start_x=spacebar_x,
+            y=spacebar_y,
+            width=spacebar_width,
+            height=spacebar_height,
+            color=(100, 100, 100),
+        )
 
     def draw_keys(self, screen, keys, start_x, start_y, color, row_offsets, key_size, padding, font_size):
         # Dibuja las teclas dadas en forma de matriz, respetando offsets y escalado
