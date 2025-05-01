@@ -86,23 +86,15 @@ class App:
             text_surface = self.font.render(alert, True, WHITE)
             self.screen.blit(text_surface, text_surface.get_rect(center=(self.width // 2, self.height // 2)))
 
-            self.keyboard.render(self.screen)
+         
 
     def run(self):
         init()
         display.set_caption("EOG Game")
-
-        # Obtengo el tamaño de la pantalla para que se adapte a cualquier pantalla
+        self.screen = display.set_mode((0, 0), pygame.FULLSCREEN)
         info = pygame.display.Info()
         self.width, self.height = info.current_w, info.current_h
-
-        # Ajustamos para que no se superponga a la barra de tareas -> poder presionar quit
-        self.height -= 60  # tamaño de la barra de tareas
-
-        self.screen = display.set_mode((self.width, self.height))
-
         self.font = Font(None, 36)
-
         pygame.mouse.set_visible(False)  # Ocultar el cursor del raton
 
         while True:
@@ -110,7 +102,11 @@ class App:
             for e in event.get():
                 if e.type == pygame.QUIT:
                     self.close()
+
                 elif e.type == pygame.KEYDOWN:
+                    # Salir con Ctrl + Q
+                    if e.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                        self.close()
                     last_keypress = e.key
                     self.log_event(e, last_keypress)
 
@@ -121,8 +117,7 @@ class App:
             self._state.update_timer()
             self.render()
             display.flip()
-            self.clock.tick(60)
-
+            self.clock.tick(60)  # Limitar a 60 FPS
 
 if __name__ == "__main__":
     app = App()

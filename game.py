@@ -73,7 +73,7 @@ class GameState:
         self._waiting_time = 2
         self._last_iteration_ts = time.time()
         self._message_display_ts = None  # Guarda cuando se mostró el mensaje
-        self.MESSAGE_DISPLAY_TIME = 2  # Tiempo mínimo para mostrar el mensaje (en segundos)
+        self._message_display_time = 2  # Tiempo mínimo para mostrar el mensaje (en segundos)
         self._alignment_color = None
 
         self._last_waiting_for_alignment_ts = None
@@ -83,7 +83,7 @@ class GameState:
         self._stimuli_pos = (0, 0)
         self._stimuli_color = StimuliColor.White
         
-        self._min_distance_new_stimuli = 250  # Distancia mínima entre estímulos
+        self._min_distance_new_stimuli = 500  # Distancia mínima entre estímulos
         self._previous_stimuli_pos = None
 
         self._cursor_pos = (0, 0)
@@ -157,7 +157,7 @@ class GameState:
 
         if self._message_display_ts:
             time_elapsed_since_message = current_time - self._message_display_ts
-            if time_elapsed_since_message < self.MESSAGE_DISPLAY_TIME:
+            if time_elapsed_since_message < self._message_display_time:
                 return  # No cambia a la siguiente iteración si no ha pasado el tiempo suficiente
         self._current_iteration += 1
         if self._current_iteration < self._iterations_count:
