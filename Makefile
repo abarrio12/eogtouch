@@ -1,5 +1,5 @@
 run:
-	uv run -- python -m eogtouch
+	uv run eogtouch
 
 setup-dev:
 	uv pip install -e .[dev]
