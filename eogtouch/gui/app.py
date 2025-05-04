@@ -41,7 +41,7 @@ class App:
             "key": key_name,
             "value": value,
             "error": self._state._errors_count,
-            "iteracion": self._state._current_iteration,
+            "iteration": self._state._current_iteration,
         })
 
     def save_events(self):
