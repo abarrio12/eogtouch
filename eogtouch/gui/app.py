@@ -1,8 +1,5 @@
-import os
 from datetime import datetime
-from time import time_ns
 
-import pandas as pd
 import pygame
 from pygame import display, event, init
 from pygame.font import Font
@@ -10,6 +7,7 @@ from pygame.time import Clock
 
 from eogtouch.gui import config
 from eogtouch.models import GameState, MainStatus
+from eogtouch.storage import DataSinker
 
 from .imgs import img_path
 from .keyboard import Keyboard
@@ -20,9 +18,8 @@ class App:
         self._state = GameState((width, height), iterations_count=max_iterations)
         self.width = width
         self.height = height
-        self._filename = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.screen, self.font = None, None
-        self.events = []
+        self.sinker: DataSinker | None = None
         self.clock = Clock()
 
         self.eye_image = pygame.image.load(img_path("eye.png"))
@@ -30,27 +27,10 @@ class App:
 
         self.keyboard = Keyboard()
 
-    def log_event(self, e, value):
-        key_name = pygame.key.name(e.key)
-        ts = time_ns()
-        event_type = "press" if e.type == pygame.KEYDOWN else "release"
-        self.events.append({
-            "timestamp": ts,
-            "event": event_type,
-            "color": self._state.stimuli_color.value,
-            "key": key_name,
-            "value": value,
-            "error": self._state._errors_count,
-            "iteration": self._state._current_iteration,
-        })
-
-    def save_events(self):
-        os.makedirs("./data", exist_ok=True)
-        df = pd.DataFrame(self.events)
-        df.to_parquet(f"./data/{self._filename}_keyboard.parquet", index=False)
 
     def close(self):
-        self.save_events()
+        filename = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.sinker.save(filename)
         pygame.quit()
         exit()
 
@@ -83,9 +63,9 @@ class App:
             text_surface = self.font.render(alert, True, config.WHITE)
             self.screen.blit(text_surface, text_surface.get_rect(center=(self.width // 2, self.height // 2)))
 
-         
-
     def run(self):
+        self.sinker = DataSinker()
+
         init()
         display.set_caption("EOG Game")
         info = pygame.display.Info()
@@ -93,6 +73,8 @@ class App:
         self.screen = display.set_mode((self.width, self.height))
         self.font = Font(None, 36)
         pygame.mouse.set_visible(False)  # Ocultar el cursor del raton
+
+        key_sample = 0
 
         while True:
             last_keypress = None
@@ -105,13 +87,31 @@ class App:
                     if e.key == pygame.K_q and pygame.key.get_mods() & pygame.KMOD_CTRL:
                         self.close()
                     last_keypress = e.key
-                    self.log_event(e, last_keypress)
+                    key_sample = e.key
 
                 elif e.type == pygame.KEYUP:
-                    self.log_event(e, last_keypress)
+                    last_keypress = e.key
+                    key_sample = 0
 
             self._state.main_logic(cursor_pos=pygame.mouse.get_pos(), keypressed=last_keypress)
             self._state.update_timer()
             self.render()
             display.flip()
+
+            # Log data to sinker
+            stimuli_x, stimuli_y = self._state.stimuli_pos
+            eyes_x, eyes_y = self.eyes()
+            self.sinker.add_sample(
+                stimuli_x=stimuli_x,
+                stimuli_y=stimuli_y,
+                stimuli_color=self._state.stimuli_color,
+                eyes_x=eyes_x,
+                eyes_y=eyes_y,
+                key=key_sample,
+            )
+
             self.clock.tick(60)
+
+            if self._state.main_status == MainStatus.Finished:
+                self.close()
+                break

@@ -94,7 +94,7 @@ class GameState:
                 break
 
         self._stimuli_pos = new_pos
-        self._previous_stimuli_pos = new_pos  # saves new position for comparison in next iteration 
+        self._previous_stimuli_pos = new_pos  # saves new position for comparison in next iteration
         self._errors_count = 0
 
     def next_iteration(self):
@@ -117,7 +117,7 @@ class GameState:
             self._last_iteration_ts = current_time
             self._message_display_ts = None  # clean message display time before next iteration
         else:
-            self._main_status = MainStatus.WaitingForInput
+            self._main_status = MainStatus.Finished
             self._current_message = "Juego terminado. Presione espacio para reiniciar."
 
     def show_message(self, message: str):
