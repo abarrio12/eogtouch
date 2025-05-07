@@ -27,3 +27,10 @@ class StimuliColor(Enum):
             StimuliColor.Green: 0x0000FF00,
             StimuliColor.Blue: 0x000000FF,
         }[self]
+
+    @classmethod
+    def from_int_value(cls, value: int) -> "StimuliColor":
+        for color in cls:
+            if color.int_value == value:
+                return color
+        return None

@@ -1,4 +1,5 @@
 run:
+
 	uv run eogtouch
 
 setup-dev:

@@ -27,7 +27,6 @@ class App:
 
         self.keyboard = Keyboard()
 
-
     def close(self):
         filename = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.sinker.save(filename)
@@ -93,20 +92,21 @@ class App:
                     last_keypress = e.key
                     key_sample = 0
 
-            self._state.main_logic(cursor_pos=pygame.mouse.get_pos(), keypressed=last_keypress)
+            cursor_pos = self.eyes()
+            
+            self._state.main_logic(cursor_pos=cursor_pos, keypressed=last_keypress)
             self._state.update_timer()
             self.render()
             display.flip()
 
             # Log data to sinker
             stimuli_x, stimuli_y = self._state.stimuli_pos
-            eyes_x, eyes_y = self.eyes()
             self.sinker.add_sample(
                 stimuli_x=stimuli_x,
                 stimuli_y=stimuli_y,
                 stimuli_color=self._state.stimuli_color,
-                eyes_x=eyes_x,
-                eyes_y=eyes_y,
+                eyes_x=cursor_pos[0], #evita hacer dos veces eyes()
+                eyes_y=cursor_pos[1],
                 key=key_sample,
             )
 
