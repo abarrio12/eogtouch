@@ -2,24 +2,22 @@
 # Asegurarse de que cada par tiene inicio y fin.
 
 import pandas as pd
-from eogtouch.models.enums import StimuliColor
 from os.path import expanduser, join, getmtime, isfile
 from glob import glob
+from eogtouch.models.enums import StimuliColor
+
 
 # 1. Buscar el último archivo .parquet en la carpeta del usuario
 user_dir = expanduser("~")
 parquet_files = [f for f in glob(join(user_dir, "*.parquet")) if isfile(f)]
-
 if not parquet_files:
     raise FileNotFoundError("No se encontraron archivos .parquet en el directorio del usuario.")
 
 # 2. Elegir el archivo más reciente
 latest_file = max(parquet_files, key=getmtime)
 
-# 3. Cargar los datos
+# 3. Cargar y ordenar los datos
 df = pd.read_parquet(latest_file)
-
-# Aseguramos orden cronológico
 df = df.sort_values("timestamp").reset_index(drop=True)
 
 # Identificar cuándo empieza una fijación (de blanco a azul o verde)
