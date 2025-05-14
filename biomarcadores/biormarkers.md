@@ -18,6 +18,8 @@ ts             ex  ey  sx  sy
 14543536660    6   2   1    6
 14543536661    7   1   0    7
 
+
+
 1. **start_latency** (Latencia de arranque): Tiempo transcurrido (ms) desde que el estímulo cambia de posición y los
    ojos comienzan a moverse. Para esto hay que definir un umbral de velocidad que defina cuando se arranca.
 

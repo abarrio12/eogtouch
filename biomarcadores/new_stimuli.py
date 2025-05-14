@@ -36,3 +36,4 @@ resultados = apariciones["timestamp"].reset_index(drop=True)
 
 print(resultados)
 
+print("Columnas disponibles:", df.columns)
