@@ -25,3 +25,6 @@ def rellenar_muestras(df: pd.DataFrame) -> pd.DataFrame:
     nuevas_filas.append(df.iloc[-1])
 
     return pd.DataFrame(nuevas_filas).reset_index(drop=True)
+
+
+
