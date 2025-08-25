@@ -5,8 +5,8 @@ setup-dev:
 	uv pip install -e .[dev]
 
 sync:
-    rm uv.lock
-    uv sync
+	rm uv.lock
+	uv sync
 
 lab:
 	jupyter lab
