@@ -289,4 +289,27 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/python,windows,linux,macos,vim,visualstudiocode
 
 *.parquet
+
 data/*.csv
+*.csv
+
+# Entorno virtual
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# Datos temporales
+*.log
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
