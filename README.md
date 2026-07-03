@@ -18,9 +18,6 @@ Experiment / task description
 - The participant must press the correct key corresponding to the color. If the response is incorrect, the participant has up to 3 chances before the trial moves on.
 - Each trial (iteration) lasts 20 seconds.
 
-Why mouse movement (not EOG)
-----------------------------
-The original plan used EOG to capture eye movement biomarkers, but technical constraints (hardware, signal quality, or setup issues) made EOG unreliable. The protocol was adjusted to capture motor output via the mouse as a robust alternative.
 
 Repository structure (high level)
 --------------------------------
